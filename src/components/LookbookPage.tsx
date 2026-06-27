@@ -460,7 +460,7 @@ export default function LookbookPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/98 backdrop-blur-md flex flex-col"
+            className="fixed left-1/2 -translate-x-1/2 top-0 bottom-0 z-[200] w-full max-w-[480px] h-full bg-black/98 backdrop-blur-md flex flex-col"
           >
             {/* Dynamic Top Bar */}
             <div className="flex justify-between items-center p-6 border-b border-white/5 absolute top-0 w-full z-10">
