@@ -51,6 +51,73 @@ function Home() {
 }
 
 export default function App() {
+  useEffect(() => {
+    // Disable right-click (context menu) to block saving images and general options
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    // Disable text selection copy and cut actions
+    const handleCopy = (e: Event) => {
+      e.preventDefault();
+    };
+    const handleCut = (e: Event) => {
+      e.preventDefault();
+    };
+
+    // Disable dragging of any image elements
+    const handleDragStart = (e: DragEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && target.tagName === "IMG") {
+        e.preventDefault();
+      }
+    };
+
+    // Disable key shortcuts: Ctrl+C, Ctrl+X, Ctrl+S, Ctrl+U, F12, Ctrl+Shift+I (inspect)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+      if (
+        (isCtrl && ["c", "x", "s", "u"].includes(key)) ||
+        (isCtrl && e.shiftKey && ["i", "j", "c"].includes(key)) ||
+        e.key === "F12"
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    // Disable pinch-to-zoom gestures (multitouch zoom) on mobile browsers
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    // Disable pinch-to-zoom gesture on iOS Safari
+    const handleGestureStart = (e: Event) => {
+      e.preventDefault();
+    };
+
+    // Add listeners
+    document.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("copy", handleCopy);
+    document.addEventListener("cut", handleCut);
+    document.addEventListener("dragstart", handleDragStart);
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("touchstart", handleTouchStart, { passive: false });
+    document.addEventListener("gesturestart", handleGestureStart);
+
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("copy", handleCopy);
+      document.removeEventListener("cut", handleCut);
+      document.removeEventListener("dragstart", handleDragStart);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("gesturestart", handleGestureStart);
+    };
+  }, []);
+
   return (
     <AdminProvider>
       <Router>

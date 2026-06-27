@@ -2,7 +2,6 @@ import { ArrowUpRight, MessageCircle, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import logoUrl from "../assets/images/vk_door_logo_1782570274426.jpg";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -59,21 +58,34 @@ export default function Navbar() {
         >
           <Link
             to="/"
-            onClick={() => {
-              setIsOpen(false);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="flex items-center gap-3 relative z-50 py-1"
+            onClick={() => setIsOpen(false)}
+            className="text-xl sm:text-2xl font-black tracking-tighter uppercase text-white w-full h-full flex items-center relative z-50"
           >
-            <img
-              src={logoUrl}
-              alt="VK Door Logo"
-              className="h-10 sm:h-12 w-auto object-contain rounded-lg invert brightness-110"
-              referrerPolicy="no-referrer"
-            />
-            <span className="text-xl sm:text-2xl font-black tracking-tighter uppercase text-white font-sans">
-              VK DOOR
-            </span>
+            <AnimatePresence mode="wait">
+              {!showSince ? (
+                <motion.div
+                  key="vkdoor"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.5 }}
+                  className="absolute left-0 flex items-center whitespace-nowrap"
+                >
+                  VK DOOR
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="since"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.5 }}
+                  className="absolute left-0 flex items-center whitespace-nowrap"
+                >
+                  Since 1992
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Link>
         </div>
 

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Great+Vibes&family=Urbanist:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -16,8 +16,32 @@
   font-family: "Bricolage Grotesque", sans-serif !important;
 }
 
+.font-great-vibes {
+  font-family: 'Great Vibes', cursive !important;
+}
+
+.font-urbanist {
+  font-family: 'Urbanist', sans-serif !important;
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
+  
+  /* Disable text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Disable image dragging and highlight */
+img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none; /* Disable long-press to save on iOS */
 }

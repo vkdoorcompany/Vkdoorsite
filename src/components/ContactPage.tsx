@@ -69,11 +69,11 @@ export default function ContactPage() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1">Founder</span>
-                  <span className="text-lg sm:text-xl font-bold text-white mb-1">Vinod Kumar Jangra</span>
+                  <span className="text-lg sm:text-xl font-bold text-white mb-1">Mr. Vinod Kumar Jangra</span>
                   <a href="tel:+919416193735" className="text-white/90 font-bold text-lg hover:text-white transition-colors">+91 9416193735</a>
                   
                   <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1 mt-6">Company CEO</span>
-                  <span className="text-lg sm:text-xl font-bold text-white mb-1">Rajkumar Jangra</span>
+                  <span className="text-lg sm:text-xl font-bold text-white mb-1">Mr. Rajkumar Jangra</span>
                   <a href="tel:+919050120110" className="text-white/90 font-bold text-lg hover:text-white transition-colors">+91 9050120110</a>
                   <a href="tel:+918221800345" className="text-white/90 font-bold text-lg hover:text-white transition-colors mt-1">+91 8221800345</a>
                 </div>
@@ -86,7 +86,7 @@ export default function ContactPage() {
                 <div className="flex flex-col">
                   <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1">Chat on WhatsApp</span>
                   <span className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-                    Rajkumar Jangra <span className="bg-white/20 text-white border border-white/20 text-xs px-2 py-0.5 rounded font-normal shrink-0">CEO</span>
+                    Mr. Rajkumar Jangra <span className="bg-white/20 text-white border border-white/20 text-xs px-2 py-0.5 rounded font-normal shrink-0">CEO</span>
                   </span>
                   <a href="https://wa.me/919050120110?text=Hello%20Mr.%20Rajkumar%20Jangra" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20BE5C] text-white text-sm font-bold py-2.5 px-5 rounded-full w-fit transition-colors shadow-lg">
                     <MessageCircle className="w-4 h-4 fill-current" />
