@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --color-brand: #d00000;
+  --color-bg: #f9f9f9;
+  --color-ink: #111111;
+  --color-ink-muted: #555555;
+  --color-surface: #ffffff;
+  --color-divider: #e5e5e5;
+}
+
+* {
+  font-family: "Bricolage Grotesque", sans-serif !important;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
