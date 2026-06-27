@@ -10,7 +10,7 @@ const words = [
   { text: "EXPERIENCE", align: "self-end" },
 ];
 
-const Word = ({ children, progress, range, align }: { children: string, progress: MotionValue<number>, range: [number, number, number, number], align: string }) => {
+const Word = ({ children, progress, range, align }: { children: string, progress: MotionValue<number>, range: [number, number, number, number], align: string, key?: any }) => {
   const opacity = useTransform(progress, range, [0, 1, 1, 0]);
   const y = useTransform(progress, range, [50, 0, 0, -50]);
   
