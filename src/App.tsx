@@ -122,20 +122,18 @@ export default function App() {
     <AdminProvider>
       <Router>
         <ScrollToTop />
-        <div className="min-h-screen bg-zinc-950 flex justify-center items-start overflow-x-hidden">
-          <main className="w-full max-w-[480px] min-h-screen bg-bg relative selection:bg-brand selection:text-white shadow-[0_0_60px_rgba(0,0,0,0.8)] border-x border-zinc-900 flex flex-col">
-            <Navbar />
-            <div className="flex-1">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/lookbook" element={<LookbookPage />} />
-              </Routes>
-            </div>
-            <Footer />
-          </main>
-        </div>
+        <main className="font-sans relative selection:bg-brand selection:text-white bg-bg min-h-screen flex flex-col overflow-x-hidden">
+          <Navbar />
+          <div className="flex-1">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/lookbook" element={<LookbookPage />} />
+            </Routes>
+          </div>
+          <Footer />
+        </main>
         <AdminPinModal />
       </Router>
     </AdminProvider>

@@ -51,7 +51,7 @@ export default function Navbar() {
   return (
     <>
       <header
-        className={`fixed left-1/2 -translate-x-1/2 top-0 z-[70] flex w-full max-w-[480px] items-center justify-between gap-3 px-4 h-16 sm:h-20 pointer-events-none transition-all duration-700 ${isOpen ? "bg-transparent" : scrolled ? "bg-transparent" : "bg-gradient-to-b from-black/50 to-transparent"}`}
+        className={`fixed left-0 top-0 z-[70] flex w-full items-center justify-between gap-3 px-6 sm:px-16 h-16 sm:h-20 pointer-events-none transition-all duration-700 ${isOpen ? "bg-transparent" : scrolled ? "bg-transparent" : "bg-gradient-to-b from-black/50 to-transparent"}`}
       >
         <div
           className={`relative flex items-center h-full w-48 sm:w-56 transition-all duration-700 ease-out origin-left pointer-events-auto ${isOpen ? "" : scrollEffect}`}
@@ -92,10 +92,6 @@ export default function Navbar() {
         <div
           className={`flex items-center h-full gap-2 sm:gap-4 transition-all duration-700 ease-out origin-right pointer-events-auto ${isOpen ? "opacity-0 pointer-events-none" : scrollEffect}`}
         >
-          <button className="hidden md:inline-flex h-[42px] sm:h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-black uppercase tracking-widest text-black shadow-xl ring-1 ring-black/5 hover:bg-black hover:text-white transition-colors duration-200 cursor-pointer">
-            <ArrowUpRight className="h-4 w-4 mr-2.5" />
-            Request Project
-          </button>
           <Link
             to="/contact"
             className="hidden sm:inline-flex h-[42px] w-[42px] sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-white text-black shadow-xl ring-1 ring-black/5 hover:bg-black hover:text-white transition-colors duration-200 cursor-pointer"
@@ -122,7 +118,7 @@ export default function Navbar() {
             animate={{ y: 0 }}
             exit={{ y: "-100%" }}
             transition={{ type: "spring", bounce: 0, duration: 0.8 }}
-            className="fixed left-1/2 -translate-x-1/2 top-0 bottom-0 z-[60] w-full max-w-[480px] h-full bg-black text-white flex flex-col pt-24 px-8 pb-8 pointer-events-auto"
+            className="fixed inset-0 z-[60] bg-black text-white flex flex-col pt-24 px-8 sm:px-16 pb-8 pointer-events-auto"
           >
             <button
               onClick={() => setIsOpen(false)}
