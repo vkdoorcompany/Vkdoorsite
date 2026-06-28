@@ -26,7 +26,17 @@ const defaultImages = [
 ];
 
 export default function Industries() {
-  const [images, setImages] = useState<{ url: string; id: string }[]>([]);
+  const [images, setImages] = useState<{ url: string; id: string }[]>(() => {
+    try {
+      const cached = localStorage.getItem("vk_marquee_images");
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.error("Failed to load marquee cache:", e);
+    }
+    return defaultImages;
+  });
   const { isAdmin } = useAdmin();
   const [directUrl, setDirectUrl] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -65,15 +75,25 @@ export default function Industries() {
         // Combine custom marquee images with defaults that are not deleted
         const activeDefaults = defaultImages.filter((d) => !deletedIds.has(d.id));
         const merged = [...customDocs, ...activeDefaults];
+        const finalImages = merged.length > 0 ? merged : defaultImages;
 
-        if (merged.length > 0) {
-          setImages(merged);
-        } else {
-          // If completely empty, fallback to the original list
-          setImages(defaultImages);
+        try {
+          localStorage.setItem("vk_marquee_images", JSON.stringify(finalImages));
+        } catch (e) {
+          console.error("Failed to cache marquee images:", e);
         }
+        setImages(finalImages);
       },
       () => {
+        try {
+          const cached = localStorage.getItem("vk_marquee_images");
+          if (cached) {
+            setImages(JSON.parse(cached));
+            return;
+          }
+        } catch (e) {
+          console.error(e);
+        }
         setImages(defaultImages);
       },
     );

@@ -103,7 +103,17 @@ const ImageLoad = ({
 };
 
 export default function LookbookPage() {
-  const [images, setImages] = useState<DoorImage[]>([]);
+  const [images, setImages] = useState<DoorImage[]>(() => {
+    try {
+      const cached = localStorage.getItem("vk_lookbook_images");
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.error("Failed to load lookbook cache:", e);
+    }
+    return DEFAULT_LOOKBOOK_IMAGES;
+  });
   const { isAdmin, setIsAdmin, showPinPrompt } = useAdmin();
   const [errorMsg, setErrorMsg] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -177,10 +187,24 @@ export default function LookbookPage() {
           return numA - numB;
         });
 
+        try {
+          localStorage.setItem("vk_lookbook_images", JSON.stringify(combined));
+        } catch (e) {
+          console.error("Failed to cache lookbook images:", e);
+        }
         setImages(combined);
       },
       (error) => {
         handleFirebaseError(error, OperationType.GET, "lookbook_doors");
+        try {
+          const cached = localStorage.getItem("vk_lookbook_images");
+          if (cached) {
+            setImages(JSON.parse(cached));
+            return;
+          }
+        } catch (e) {
+          console.error(e);
+        }
         setImages(DEFAULT_LOOKBOOK_IMAGES);
       },
     );
