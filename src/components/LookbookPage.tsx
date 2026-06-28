@@ -107,6 +107,7 @@ export default function LookbookPage() {
   const { isAdmin, setIsAdmin, showPinPrompt } = useAdmin();
   const [errorMsg, setErrorMsg] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [isDone, setIsDone] = useState(false);
   const [selectedImage, setSelectedImage] = useState<DoorImage | null>(null);
   const [directUrl, setDirectUrl] = useState("");
   const [customCode, setCustomCode] = useState("");
@@ -148,18 +149,35 @@ export default function LookbookPage() {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const docs: DoorImage[] = [];
+        const customDocs: DoorImage[] = [];
+        const deletedIds = new Set<string>();
+
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
-          if (data && data.id && data.url) {
-            docs.push(data as DoorImage);
+          if (data) {
+            if (data.deleted === true) {
+              deletedIds.add(docSnap.id);
+            } else if (data.id && data.url) {
+              customDocs.push(data as DoorImage);
+            }
           }
         });
-        if (docs.length > 0) {
-          setImages(docs);
-        } else {
-          setImages(DEFAULT_LOOKBOOK_IMAGES);
-        }
+
+        // Combine custom images with defaults, filtering out overridden or deleted ones
+        const customIds = new Set(customDocs.map((d) => d.id));
+        const uniqueDefaults = DEFAULT_LOOKBOOK_IMAGES.filter(
+          (d) => !customIds.has(d.id) && !deletedIds.has(d.id),
+        );
+
+        // Sort all images ascending by numerical design code
+        const combined = [...customDocs, ...uniqueDefaults];
+        combined.sort((a, b) => {
+          const numA = parseInt(a.id.match(/\d+/)?.at(0) || "0", 10);
+          const numB = parseInt(b.id.match(/\d+/)?.at(0) || "0", 10);
+          return numA - numB;
+        });
+
+        setImages(combined);
       },
       (error) => {
         handleFirebaseError(error, OperationType.GET, "lookbook_doors");
@@ -240,6 +258,10 @@ export default function LookbookPage() {
       await setDoc(doc(db, "lookbook_doors", doorId), doorData);
       setDirectUrl("");
       setCustomCode("");
+      setIsDone(true);
+      setTimeout(() => {
+        setIsDone(false);
+      }, 2000);
     } catch (error) {
       console.error("Error adding direct link:", error);
       setErrorMsg("Failed to add design. Please try again.");
@@ -255,7 +277,19 @@ export default function LookbookPage() {
       )
     ) {
       try {
-        await deleteDoc(doc(db, "lookbook_doors", id));
+        const isDefault = DEFAULT_LOOKBOOK_IMAGES.some((img) => img.id === id);
+        if (isDefault) {
+          // For default images, mark them as deleted in Firestore so they don't show up
+          await setDoc(doc(db, "lookbook_doors", id), {
+            id: id,
+            url: "",
+            deleted: true,
+            timestamp: Date.now(),
+          });
+        } else {
+          // For custom images, we can delete them completely
+          await deleteDoc(doc(db, "lookbook_doors", id));
+        }
       } catch (error) {
         handleFirebaseError(
           error,
@@ -360,12 +394,16 @@ export default function LookbookPage() {
                   <button
                     type="submit"
                     disabled={uploading || !directUrl}
-                    className="w-full flex items-center justify-center gap-2 bg-black hover:bg-[#18C654] text-white px-6 py-4 rounded-full font-bold uppercase tracking-widest text-xs transition-all shadow-lg hover:shadow-xl disabled:opacity-50 pointer-events-auto cursor-pointer"
+                    className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full font-bold uppercase tracking-widest text-xs transition-all shadow-lg hover:shadow-xl disabled:opacity-50 pointer-events-auto cursor-pointer ${isDone ? "bg-[#18C654] text-white" : "bg-black hover:bg-[#18C654] text-white"}`}
                   >
                     {uploading ? (
                       <>
                         <LoaderIcon className="animate-spin" size={16} />{" "}
                         Processing...
+                      </>
+                    ) : isDone ? (
+                      <>
+                        Done! / सफलतापूर्वक जोड़ा गया
                       </>
                     ) : (
                       <>
