@@ -29,8 +29,8 @@ export default function Manifesto() {
   });
 
   return (
-    <section ref={container} className="bg-white px-6 sm:px-16 flex items-center h-[100vh] relative">
-      <div className="max-w-6xl mx-auto w-full sticky top-1/2 -translate-y-1/2">
+    <section ref={container} className="bg-white px-6 sm:px-16 pt-[18px] pb-[8px] relative">
+      <div className="max-w-6xl mx-auto w-full">
         <h2 className="text-[3.5rem] sm:text-7xl md:text-8xl lg:text-[7rem] font-black leading-[0.95] tracking-tighter uppercase flex flex-col w-full gap-4 sm:gap-8">
           {words.map((word, i) => {
             const startIn = 0.1 + (i * 0.05);

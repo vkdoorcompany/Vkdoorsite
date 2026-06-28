@@ -116,8 +116,8 @@ export default function Industries() {
   };
 
   return (
-    <section className="bg-black w-full overflow-hidden h-[82vh] py-0 m-0 flex items-center justify-center relative">
-      <div className="flex w-max h-[82vh] items-center">
+    <section className="bg-black w-full overflow-hidden pt-[18px] pb-[8px] m-0 flex items-center justify-center relative">
+      <div className="flex w-max h-[480px] items-center">
         <motion.div
           key={displayImages.map((img) => img.id).join(",")}
           animate={{ x: ["0%", "-25%"] }}
@@ -126,12 +126,12 @@ export default function Industries() {
             duration: displayImages.length * 4.5,
             repeat: Infinity,
           }}
-          className="flex gap-0 h-[82vh] will-change-transform"
+          className="flex gap-0 h-[480px] will-change-transform"
         >
           {marqueeImages.map((img, i) => (
             <div
               key={i}
-              className="h-[82vh] aspect-[1/2.15] shrink-0"
+              className="h-[480px] aspect-[1/2.15] shrink-0"
             >
               <img
                 src={img.url}
