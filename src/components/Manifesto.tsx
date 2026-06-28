@@ -15,7 +15,7 @@ const Word = ({ children, progress, range, align }: { children: string, progress
   const y = useTransform(progress, range, [50, 0, 0, -50]);
   
   return (
-    <motion.span style={{ opacity, y }} className={`relative inline-block text-black ${align}`}>
+    <motion.span style={{ opacity, y }} className={`relative inline-block text-white ${align}`}>
       {children}
     </motion.span>
   );
@@ -29,7 +29,7 @@ export default function Manifesto() {
   });
 
   return (
-    <section ref={container} className="bg-white px-6 sm:px-16 pt-[18px] pb-[8px] relative">
+    <section ref={container} className="bg-black px-6 sm:px-16 pt-[18px] pb-[8px] relative border-none">
       <div className="max-w-6xl mx-auto w-full">
         <h2 className="text-[3.5rem] sm:text-7xl md:text-8xl lg:text-[7rem] font-black leading-[0.95] tracking-tighter uppercase flex flex-col w-full gap-4 sm:gap-8">
           {words.map((word, i) => {
