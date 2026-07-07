@@ -18,6 +18,7 @@ interface DoorImage {
   url: string; // Direct image URL
   storagePath: string; // For compatibility
   timestamp: number;
+  deleted?: boolean;
 }
 
 const DEFAULT_LOOKBOOK_IMAGES: DoorImage[] = [
@@ -142,6 +143,32 @@ export default function LookbookPage() {
   };
 
   useEffect(() => {
+    // 1. First, load from localStorage to populate the UI instantly on mount
+    const savedLookbook = localStorage.getItem("vk_lookbook_doors");
+    if (savedLookbook) {
+      try {
+        const parsed = JSON.parse(savedLookbook) as DoorImage[];
+        const customDocs = parsed.filter(d => d.id && d.url && !d.deleted);
+        const deletedIds = new Set(parsed.filter(d => d.deleted).map(d => d.id));
+        
+        const customIds = new Set(customDocs.map((d) => d.id));
+        const uniqueDefaults = DEFAULT_LOOKBOOK_IMAGES.filter(
+          (d) => !customIds.has(d.id) && !deletedIds.has(d.id),
+        );
+
+        const combined = [...customDocs, ...uniqueDefaults];
+        combined.sort((a, b) => {
+          const numA = parseInt(a.id.match(/\d+/)?.at(0) || "0", 10);
+          const numB = parseInt(b.id.match(/\d+/)?.at(0) || "0", 10);
+          return numA - numB;
+        });
+        setImages(combined);
+      } catch (e) {
+        console.error("Failed to parse saved lookbook:", e);
+      }
+    }
+
+    // 2. Set up Firestore snapshot listener
     const q = query(
       collection(db, "lookbook_doors"),
       orderBy("timestamp", "desc"),
@@ -163,6 +190,18 @@ export default function LookbookPage() {
           }
         });
 
+        // Save these to localStorage for persistence backup
+        const allLookbookItems: DoorImage[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data) {
+            allLookbookItems.push(data as DoorImage);
+          }
+        });
+        if (allLookbookItems.length > 0) {
+          localStorage.setItem("vk_lookbook_doors", JSON.stringify(allLookbookItems));
+        }
+
         // Combine custom images with defaults, filtering out overridden or deleted ones
         const customIds = new Set(customDocs.map((d) => d.id));
         const uniqueDefaults = DEFAULT_LOOKBOOK_IMAGES.filter(
@@ -181,7 +220,7 @@ export default function LookbookPage() {
       },
       (error) => {
         handleFirebaseError(error, OperationType.GET, "lookbook_doors");
-        setImages(DEFAULT_LOOKBOOK_IMAGES);
+        // Fallback already loaded from localStorage
       },
     );
 
@@ -265,11 +304,31 @@ export default function LookbookPage() {
         timestamp: Date.now(),
       };
 
-      // We do NOT await setDoc to prevent UI blocking from Firestore's server-acknowledge latency.
-      // Firebase's offline SDK and optimistic listener will handle updating the gallery UI instantly.
-      setDoc(doc(db, "lookbook_doors", doorId), doorData).catch((error) => {
-        console.error("Firestore background save error:", error);
+      // 1. Optimistic state update
+      setImages((prev) => {
+        const filtered = prev.filter((img) => img.id !== doorId);
+        const combined = [doorData, ...filtered];
+        combined.sort((a, b) => {
+          const numA = parseInt(a.id.match(/\d+/)?.at(0) || "0", 10);
+          const numB = parseInt(b.id.match(/\d+/)?.at(0) || "0", 10);
+          return numA - numB;
+        });
+        return combined;
       });
+
+      // 2. Save to localStorage backup
+      try {
+        const savedLookbook = localStorage.getItem("vk_lookbook_doors");
+        let parsed: any[] = savedLookbook ? JSON.parse(savedLookbook) : [];
+        parsed = parsed.filter((p) => p.id !== doorId);
+        parsed.push(doorData);
+        localStorage.setItem("vk_lookbook_doors", JSON.stringify(parsed));
+      } catch (e) {
+        console.error("Local storage save error:", e);
+      }
+
+      // 3. Save to Firestore (resolves instantly due to persistent local cache, background-syncs to cloud)
+      await setDoc(doc(db, "lookbook_doors", doorId), doorData);
 
       // Instantly reset the input values and uploading state
       setDirectUrl("");
@@ -285,6 +344,28 @@ export default function LookbookPage() {
   const handleDelete = async (id: string) => {
     // Optimistic UI update: instantly remove from state to ensure < 2s removal
     setImages((prev) => prev.filter((img) => img.id !== id));
+
+    // Update localStorage fallback
+    try {
+      const savedLookbook = localStorage.getItem("vk_lookbook_doors");
+      let parsed: any[] = savedLookbook ? JSON.parse(savedLookbook) : [];
+      const isDefault = DEFAULT_LOOKBOOK_IMAGES.some((img) => img.id === id);
+      
+      if (isDefault) {
+        parsed = parsed.filter(p => p.id !== id);
+        parsed.push({
+          id: id,
+          url: "",
+          deleted: true,
+          timestamp: Date.now(),
+        });
+      } else {
+        parsed = parsed.filter(p => p.id !== id);
+      }
+      localStorage.setItem("vk_lookbook_doors", JSON.stringify(parsed));
+    } catch (e) {
+      console.error("Local storage delete error:", e);
+    }
 
     try {
       const isDefault = DEFAULT_LOOKBOOK_IMAGES.some((img) => img.id === id);

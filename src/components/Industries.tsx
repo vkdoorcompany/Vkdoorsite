@@ -41,6 +41,24 @@ export default function Industries() {
   }, [isAdmin]);
 
   useEffect(() => {
+    // 1. First, load from localStorage to populate the UI instantly on mount
+    const savedMarquee = localStorage.getItem("vk_marquee_images");
+    if (savedMarquee) {
+      try {
+        const parsed = JSON.parse(savedMarquee) as { url: string; id: string; deleted?: boolean }[];
+        const customDocs = parsed.filter(d => d.id && d.url && !d.deleted);
+        const deletedIds = new Set(parsed.filter(d => d.deleted).map(d => d.id));
+        
+        const activeDefaults = defaultImages.filter((d) => !deletedIds.has(d.id));
+        const merged = [...customDocs, ...activeDefaults];
+        const finalImages = merged.length > 0 ? merged : defaultImages;
+        setImages(finalImages);
+      } catch (e) {
+        console.error("Failed to parse saved marquee:", e);
+      }
+    }
+
+    // 2. Set up Firestore snapshot listener
     const q = query(
       collection(db, "marquee_images"),
       orderBy("timestamp", "desc"),
@@ -63,6 +81,18 @@ export default function Industries() {
           }
         });
 
+        // Save these to localStorage for persistence backup
+        const allMarqueeItems: any[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data) {
+            allMarqueeItems.push({ id: docSnap.id, ...data });
+          }
+        });
+        if (allMarqueeItems.length > 0) {
+          localStorage.setItem("vk_marquee_images", JSON.stringify(allMarqueeItems));
+        }
+
         // Combine custom marquee images with defaults that are not deleted
         const activeDefaults = defaultImages.filter((d) => !deletedIds.has(d.id));
         const merged = [...customDocs, ...activeDefaults];
@@ -71,7 +101,7 @@ export default function Industries() {
         setImages(finalImages);
       },
       () => {
-        setImages(defaultImages);
+        // Fallback already handled by localStorage
       },
     );
     return () => unsubscribe();
@@ -99,12 +129,29 @@ export default function Industries() {
     setUploading(true);
     try {
       const doorId = `marquee_${Date.now()}`;
-      // Trigger background write to Firestore
-      setDoc(doc(db, "marquee_images", doorId), {
+      const newImg = { url: directUrl.trim(), id: doorId };
+
+      // 1. Optimistic state update
+      setImages((prev) => {
+        const filtered = prev.filter(img => img.id !== doorId);
+        return [newImg, ...filtered];
+      });
+
+      // 2. Save to localStorage backup
+      try {
+        const savedMarquee = localStorage.getItem("vk_marquee_images");
+        let parsed: any[] = savedMarquee ? JSON.parse(savedMarquee) : [];
+        parsed = parsed.filter(p => p.id !== doorId);
+        parsed.push({ id: doorId, url: directUrl.trim(), timestamp: Date.now() });
+        localStorage.setItem("vk_marquee_images", JSON.stringify(parsed));
+      } catch (e) {
+        console.error("Local storage marquee save error:", e);
+      }
+
+      // 3. Trigger write to Firestore (resolves instantly due to persistent local cache, syncs in background)
+      await setDoc(doc(db, "marquee_images", doorId), {
         url: directUrl.trim(),
         timestamp: Date.now(),
-      }).catch((error) => {
-        console.error("Firestore marquee background save error:", error);
       });
 
       // Instantly clear the url and uploading state
@@ -120,6 +167,27 @@ export default function Industries() {
   const handleDeleteSingle = async (id: string) => {
     // Optimistic UI update: instantly remove from state to ensure < 2s removal
     setImages((prev) => prev.filter((img) => img.id !== id));
+
+    // Update localStorage fallback
+    try {
+      const savedMarquee = localStorage.getItem("vk_marquee_images");
+      let parsed: any[] = savedMarquee ? JSON.parse(savedMarquee) : [];
+      const isDefault = defaultImages.some((d) => d.id === id);
+      
+      if (isDefault) {
+        parsed = parsed.filter(p => p.id !== id);
+        parsed.push({
+          id: id,
+          deleted: true,
+          timestamp: Date.now()
+        });
+      } else {
+        parsed = parsed.filter(p => p.id !== id);
+      }
+      localStorage.setItem("vk_marquee_images", JSON.stringify(parsed));
+    } catch (e) {
+      console.error("Local storage delete single error:", e);
+    }
 
     try {
       const isDefault = defaultImages.some((d) => d.id === id);
@@ -140,6 +208,11 @@ export default function Industries() {
 
   const handleDeleteAll = async () => {
     if (!confirm("Delete all marquee images and restore defaults?")) return;
+    
+    // Clear localStorage
+    localStorage.removeItem("vk_marquee_images");
+    setImages(defaultImages);
+
     try {
       const querySnapshot = await getDocs(collection(db, "marquee_images"));
       for (const docSnap of querySnapshot.docs) {
