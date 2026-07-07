@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Trash2, X, Share2, Plus, LoaderIcon, RefreshCw } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import {
   collection,
   query,
@@ -103,27 +103,17 @@ const ImageLoad = ({
 };
 
 export default function LookbookPage() {
-  const [images, setImages] = useState<DoorImage[]>(() => {
-    try {
-      const cached = localStorage.getItem("vk_lookbook_images");
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch (e) {
-      console.error("Failed to load lookbook cache:", e);
-    }
-    return DEFAULT_LOOKBOOK_IMAGES;
-  });
+  const [images, setImages] = useState<DoorImage[]>(DEFAULT_LOOKBOOK_IMAGES);
   const { isAdmin, setIsAdmin, showPinPrompt } = useAdmin();
   const [errorMsg, setErrorMsg] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [isDone, setIsDone] = useState(false);
   const [selectedImage, setSelectedImage] = useState<DoorImage | null>(null);
   const [directUrl, setDirectUrl] = useState("");
   const [customCode, setCustomCode] = useState("");
 
   const lastClickRef = useRef<{ [key: string]: number }>({});
   const clickTimeoutRef = useRef<{ [key: string]: any }>({});
+  const activeCodeReservations = useRef<Set<string>>(new Set());
 
   const handleItemClick = (img: DoorImage) => {
     if (isAdmin) {
@@ -187,24 +177,10 @@ export default function LookbookPage() {
           return numA - numB;
         });
 
-        try {
-          localStorage.setItem("vk_lookbook_images", JSON.stringify(combined));
-        } catch (e) {
-          console.error("Failed to cache lookbook images:", e);
-        }
         setImages(combined);
       },
       (error) => {
         handleFirebaseError(error, OperationType.GET, "lookbook_doors");
-        try {
-          const cached = localStorage.getItem("vk_lookbook_images");
-          if (cached) {
-            setImages(JSON.parse(cached));
-            return;
-          }
-        } catch (e) {
-          console.error(e);
-        }
         setImages(DEFAULT_LOOKBOOK_IMAGES);
       },
     );
@@ -259,19 +235,29 @@ export default function LookbookPage() {
         nextNum = Math.max(...validIds) + 1;
       }
     }
-    return `VK ${nextNum}`;
+    
+    // Check if this number is already reserved in flight
+    while (activeCodeReservations.current.has(`VK ${nextNum}`)) {
+      nextNum++;
+    }
+    
+    const code = `VK ${nextNum}`;
+    activeCodeReservations.current.add(code);
+    return code;
   };
 
-  const handleAddDirectLink = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!directUrl.trim()) return;
-
-    setUploading(true);
     setErrorMsg("");
 
+    if (!directUrl.trim()) {
+      setErrorMsg("Please enter a valid image URL. / कृपया एक मान्य इमेज यूआरएल दर्ज करें।");
+      return;
+    }
+
+    setUploading(true);
     try {
       const doorId = customCode.trim() || getNextCode();
-
       const doorData: DoorImage = {
         id: doorId,
         url: directUrl.trim(),
@@ -282,46 +268,40 @@ export default function LookbookPage() {
       await setDoc(doc(db, "lookbook_doors", doorId), doorData);
       setDirectUrl("");
       setCustomCode("");
-      setIsDone(true);
-      setTimeout(() => {
-        setIsDone(false);
-      }, 2000);
-    } catch (error) {
+      window.location.reload();
+    } catch (error: any) {
       console.error("Error adding direct link:", error);
-      setErrorMsg("Failed to add design. Please try again.");
+      setErrorMsg("Failed to add link: " + error.message);
     } finally {
       setUploading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (
-      confirm(
-        `Are you sure you want to delete ${id}? / क्या आप वाकई इसे डिलीट करना चाहते हैं?`,
-      )
-    ) {
-      try {
-        const isDefault = DEFAULT_LOOKBOOK_IMAGES.some((img) => img.id === id);
-        if (isDefault) {
-          // For default images, mark them as deleted in Firestore so they don't show up
-          await setDoc(doc(db, "lookbook_doors", id), {
-            id: id,
-            url: "",
-            deleted: true,
-            timestamp: Date.now(),
-          });
-        } else {
-          // For custom images, we can delete them completely
-          await deleteDoc(doc(db, "lookbook_doors", id));
-        }
-      } catch (error) {
-        handleFirebaseError(
-          error,
-          OperationType.DELETE,
-          `lookbook_doors/${id}`,
-        );
-        console.error("Delete error:", error);
+    // Optimistic UI update: instantly remove from state to ensure < 2s removal
+    setImages((prev) => prev.filter((img) => img.id !== id));
+
+    try {
+      const isDefault = DEFAULT_LOOKBOOK_IMAGES.some((img) => img.id === id);
+      if (isDefault) {
+        // For default images, mark them as deleted in Firestore so they don't show up
+        await setDoc(doc(db, "lookbook_doors", id), {
+          id: id,
+          url: "",
+          deleted: true,
+          timestamp: Date.now(),
+        });
+      } else {
+        // For custom images, we can delete them completely
+        await deleteDoc(doc(db, "lookbook_doors", id));
       }
+    } catch (error) {
+      handleFirebaseError(
+        error,
+        OperationType.DELETE,
+        `lookbook_doors/${id}`,
+      );
+      console.error("Delete error:", error);
     }
   };
 
@@ -367,84 +347,7 @@ export default function LookbookPage() {
           </div>
         </div>
 
-        {/* Admin Controls */}
-        <AnimatePresence>
-          {isAdmin && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-12 bg-white p-6 sm:p-8 rounded-[2rem] shadow-xl border border-black/5 flex flex-col items-center w-full"
-            >
-              <div className="text-xl font-bold uppercase tracking-widest text-[#18C654] mb-4 flex items-center gap-2">
-                Control Dashboard (Lookbook)
-              </div>
-              <p className="text-xs text-zinc-500 mb-6 font-mono text-center max-w-md">
-                Tip: Double click or double tap any door thumbnail card design
-                to delete it.
-              </p>
 
-              <form
-                onSubmit={handleAddDirectLink}
-                className="w-full max-w-xl flex flex-col gap-5"
-              >
-                <div className="flex flex-col gap-1 text-left">
-                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest pl-1">
-                    Image Link / URL
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={directUrl}
-                    onChange={(e) => setDirectUrl(e.target.value)}
-                    placeholder="https://i.postimg.cc/..."
-                    className="w-full px-5 py-3 rounded-full bg-zinc-50 border border-zinc-200 focus:border-[#18C654] focus:outline-none transition-colors font-medium text-sm text-zinc-800"
-                  />
-                </div>
-                <div className="flex flex-col gap-1 text-left">
-                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest pl-1">
-                    Design Code (Optional - e.g. VK 102)
-                  </label>
-                  <input
-                    type="text"
-                    value={customCode}
-                    onChange={(e) => setCustomCode(e.target.value)}
-                    placeholder={getNextCode()}
-                    className="w-full px-5 py-3 rounded-full bg-zinc-50 border border-zinc-200 focus:border-[#18C654] focus:outline-none transition-colors font-medium text-sm text-zinc-800"
-                  />
-                </div>
-
-                <div className="mt-2">
-                  <button
-                    type="submit"
-                    disabled={uploading || !directUrl}
-                    className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-full font-bold uppercase tracking-widest text-xs transition-all shadow-lg hover:shadow-xl disabled:opacity-50 pointer-events-auto cursor-pointer ${isDone ? "bg-[#18C654] text-white" : "bg-black hover:bg-[#18C654] text-white"}`}
-                  >
-                    {uploading ? (
-                      <>
-                        <LoaderIcon className="animate-spin" size={16} />{" "}
-                        Processing...
-                      </>
-                    ) : isDone ? (
-                      <>
-                        Done! / सफलतापूर्वक जोड़ा गया
-                      </>
-                    ) : (
-                      <>
-                        <Plus size={16} /> Add Design Link
-                      </>
-                    )}
-                  </button>
-                </div>
-                {errorMsg && (
-                  <p className="text-red-500 text-xs text-center font-semibold mt-2">
-                    {errorMsg}
-                  </p>
-                )}
-              </form>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Asymmetrical premium grid - Exactly 2 elements per row on all display screen sizes */}
         <div className="grid grid-cols-2 gap-3 sm:gap-6 pb-20">
@@ -464,6 +367,22 @@ export default function LookbookPage() {
               <div className="w-full h-auto transform group-hover:scale-[1.04] transition-transform duration-[1.2s] ease-[0.16, 1, 0.3, 1] rounded-xl overflow-hidden bg-transparent">
                 <ImageLoad src={img.url} alt={`Door ${img.id}`} id={img.id} index={i} />
               </div>
+
+              {/* Explicit Admin Delete Button */}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    handleDelete(img.id);
+                  }}
+                  className="absolute top-4 right-4 z-30 bg-red-600 hover:bg-red-700 active:scale-95 text-white p-2 rounded-full shadow-[0_4px_12px_rgba(220,38,38,0.4)] transition-all pointer-events-auto cursor-pointer flex items-center justify-center border border-white/20"
+                  title="Delete Design / डिज़ाइन हटाएं"
+                >
+                  <Trash2 size={15} />
+                </button>
+              )}
 
               {/* Micro floating item tag */}
               <div className="absolute top-4 left-4 z-10 pointer-events-none">
@@ -513,6 +432,70 @@ export default function LookbookPage() {
             Collection curated soon.
           </div>
         )}
+
+        {/* Admin Section - Premium Black Theme */}
+        <AnimatePresence>
+          {isAdmin && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
+              transition={{ duration: 0.5 }}
+              className="mt-16 w-full max-w-2xl mx-auto p-8 sm:p-12 bg-zinc-950 rounded-3xl border border-zinc-800/80 shadow-[0_24px_50px_rgba(0,0,0,0.8)] text-left flex flex-col gap-8"
+            >
+              <div className="border-b border-zinc-900 pb-4">
+                <h2 className="text-sm font-bold uppercase tracking-[0.25em] text-white font-sans">
+                  UPLOAD NEW DESIGN
+                </h2>
+              </div>
+
+              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                {/* Design Code Input */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pl-1">
+                    Design Code (VK #)
+                  </label>
+                  <input
+                    type="text"
+                    value={customCode || ""}
+                    onChange={(e) => setCustomCode(e.target.value)}
+                    placeholder={getNextCode()}
+                    className="w-full px-5 py-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:border-zinc-500 focus:outline-none transition-all font-bold text-sm font-mono tracking-wider"
+                  />
+                </div>
+
+                {/* Direct Link Input */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pl-1">
+                    Direct Image Link
+                  </label>
+                  <input
+                    type="url"
+                    value={directUrl || ""}
+                    onChange={(e) => setDirectUrl(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    className="w-full px-5 py-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:border-zinc-500 focus:outline-none transition-all font-medium text-sm"
+                  />
+                </div>
+
+                {errorMsg && (
+                  <div className="p-4 rounded-xl bg-red-950/40 text-red-400 border border-red-900/50 text-xs font-semibold">
+                    {errorMsg}
+                  </div>
+                )}
+
+                {/* Submit button */}
+                <button
+                  type="submit"
+                  disabled={uploading || !directUrl}
+                  className="w-full bg-white hover:bg-zinc-200 text-black font-bold py-4 rounded-xl uppercase tracking-widest text-[11px] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {uploading ? "Saving..." : "Add Design to Gallery"}
+                </button>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Lightbox Modal */}

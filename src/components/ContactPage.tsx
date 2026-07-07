@@ -199,7 +199,7 @@ export default function ContactPage() {
                 className="bg-black/5 border border-black/10 rounded-xl px-4 py-3 sm:py-4 text-black focus:outline-none focus:border-black/30 transition-colors placeholder:text-black/30 text-sm font-light"
                
                 placeholder="Enter full name"
-                value={formData.name}
+                value={formData.name || ''}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
               />
             </div>
@@ -212,7 +212,7 @@ export default function ContactPage() {
                 className="bg-black/5 border border-black/10 rounded-xl px-4 py-3 sm:py-4 text-black focus:outline-none focus:border-black/30 transition-colors placeholder:text-black/30 text-sm font-light"
                
                 placeholder="Enter phone number"
-                value={formData.phone}
+                value={formData.phone || ''}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
               />
             </div>
@@ -224,7 +224,7 @@ export default function ContactPage() {
                 className="bg-black/5 border border-black/10 rounded-xl px-4 py-3 sm:py-4 text-black focus:outline-none focus:border-black/30 transition-colors min-h-[120px] resize-none placeholder:text-black/30 text-sm font-light"
                
                 placeholder="Describe the doors, windows, wood types or custom sizes required..."
-                value={formData.req}
+                value={formData.req || ''}
                 onChange={(e) => setFormData({...formData, req: e.target.value})}
               />
             </div>
@@ -236,7 +236,7 @@ export default function ContactPage() {
                 className="bg-black/5 border border-black/10 rounded-xl px-4 py-3 sm:py-4 text-black focus:outline-none focus:border-black/30 transition-colors placeholder:text-black/30 text-sm font-light"
                
                 placeholder="City, State"
-                value={formData.location}
+                value={formData.location || ''}
                 onChange={(e) => setFormData({...formData, location: e.target.value})}
               />
             </div>

@@ -56,7 +56,7 @@ export default function AdminPinModal() {
             <input 
               type="password" 
               maxLength={4}
-              value={pinInput}
+              value={pinInput || ''}
               onChange={(e) => setPinInput(e.target.value)}
               placeholder="••••"
               className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-4 text-center text-3xl font-black tracking-[0.5em] mb-4 focus:ring-2 focus:ring-brand focus:border-transparent outline-none text-black placeholder:text-zinc-300"
