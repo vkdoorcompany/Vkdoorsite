@@ -99,16 +99,20 @@ export default function Industries() {
     setUploading(true);
     try {
       const doorId = `marquee_${Date.now()}`;
-      await setDoc(doc(db, "marquee_images", doorId), {
+      // Trigger background write to Firestore
+      setDoc(doc(db, "marquee_images", doorId), {
         url: directUrl.trim(),
         timestamp: Date.now(),
+      }).catch((error) => {
+        console.error("Firestore marquee background save error:", error);
       });
+
+      // Instantly clear the url and uploading state
       setDirectUrl("");
-      window.location.reload();
+      setUploading(false);
     } catch (error: any) {
       console.error("Error adding direct link:", error);
       setErrorMsg("Failed to add link: " + error.message);
-    } finally {
       setUploading(false);
     }
   };

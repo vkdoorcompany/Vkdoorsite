@@ -265,14 +265,19 @@ export default function LookbookPage() {
         timestamp: Date.now(),
       };
 
-      await setDoc(doc(db, "lookbook_doors", doorId), doorData);
+      // We do NOT await setDoc to prevent UI blocking from Firestore's server-acknowledge latency.
+      // Firebase's offline SDK and optimistic listener will handle updating the gallery UI instantly.
+      setDoc(doc(db, "lookbook_doors", doorId), doorData).catch((error) => {
+        console.error("Firestore background save error:", error);
+      });
+
+      // Instantly reset the input values and uploading state
       setDirectUrl("");
       setCustomCode("");
-      window.location.reload();
+      setUploading(false);
     } catch (error: any) {
       console.error("Error adding direct link:", error);
       setErrorMsg("Failed to add link: " + error.message);
-    } finally {
       setUploading(false);
     }
   };
